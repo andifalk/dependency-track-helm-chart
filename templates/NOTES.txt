@@ -1,0 +1,3 @@
+{{- if .Values.ingress.enabled }}
+Visit {{ if .Values.ingress.tls.enabled }}https{{- else }}http{{- end }}://{{ .Values.ingress.host }} to use dependency-track.
+{{- end }}

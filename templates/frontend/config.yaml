@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dt-frontend-config
+  namespace: {{ .Values.global.nameSpace }}
+data:
+  API_BASE_URL: http://localhost:8081
+

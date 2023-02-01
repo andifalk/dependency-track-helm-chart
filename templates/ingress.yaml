@@ -1,0 +1,34 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: {{ include "common.capabilities.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: {{ include "common.names.fullname" . }}
+  namespace: {{ .Values.global.nameSpace }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+{{- if .Values.ingress.ingressClassName }}
+  ingressClassName: {{ .Values.ingress.ingressClassName -}}
+{{- end }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.host }}
+    secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+  - host: {{ .Values.ingress.host }}
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend: {{ include "common.ingress.backend" (dict "serviceName" (print (include "common.names.fullname" . ) "-apiserver") "servicePort" 80 "context" $) | nindent 10 }}
+      - path: /mirror
+        pathType: Prefix
+        backend: {{ include "common.ingress.backend" (dict "serviceName" (print (include "common.names.fullname" . ) "-apiserver") "servicePort" 80 "context" $) | nindent 10 }}
+      - path: /
+        pathType: Prefix
+        backend: {{ include "common.ingress.backend" (dict "serviceName" (print (include "common.names.fullname" . ) "-frontend") "servicePort" 80 "context" $) | nindent 10 }}
+{{- end }}

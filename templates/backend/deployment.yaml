@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dt-apiserver
+  namespace: {{ .Values.global.nameSpace }}
+  labels:
+    app: dt-apiserver
+    tier: backend
+  {{- with .Values.apiserver.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.apiserver.replicaCount }}
+  {{- if .Values.apiserver.persistentVolume.enabled }}
+  strategy:
+    type: Recreate
+  {{- end }}
+  selector:
+    matchLabels: 
+      app: dt-apiserver
+  template:
+    metadata:
+      labels: 
+        app: dt-apiserver
+        tier: backend
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 6 }}
+      {{- end }}
+      {{- if .Values.apiserver.serviceAccount.create}}
+      serviceAccountName: dt-apiserver
+      {{- end }}
+      securityContext: {{- toYaml .Values.apiserver.podSecurityContext | nindent 8 }}
+      {{- with .Values.apiserver.initContainers }}
+      initContainers: {{- toYaml . | nindent 6 }}
+      {{- end }}
+      containers:
+      - name: {{ .Chart.Name }}-apiserver
+        securityContext: {{- toYaml .Values.apiserver.securityContext | nindent 12 }}
+        image: dependencytrack/apiserver
+        imagePullPolicy: {{ .Values.apiserver.image.pullPolicy }}
+        {{- with .Values.apiserver.resources }}
+        resources: {{ . | toYaml | nindent 10 }}
+        {{- end }}
+        volumeMounts:
+        - name: dt-backend-config
+          mountPath: /etc/config
+        - name: dt-backend-secrets
+          mountPath: /etc/secrets
+        - name: data
+          mountPath: /data
+        - name: tmp
+          mountPath: /tmp
+        ports:
+        - name: api
+          containerPort: 8080
+          protocol: TCP
+        {{- if .Values.apiserver.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            port: api
+            path: {{ .Values.apiserver.livenessProbe.path }}
+          initialDelaySeconds: {{ .Values.apiserver.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.apiserver.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.apiserver.livenessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.apiserver.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.apiserver.livenessProbe.failureThreshold }}
+        {{- end }}
+        {{- if .Values.apiserver.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            port: api
+            path: {{ .Values.apiserver.readinessProbe.path }}
+          initialDelaySeconds: {{ .Values.apiserver.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.apiserver.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.apiserver.readinessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.apiserver.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.apiserver.readinessProbe.failureThreshold }}
+        {{- end }}
+      {{- with .Values.apiserver.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.apiserver.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.apiserver.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+      - name: dt-backend-config
+        configMap:
+          name: dt-backend-config
+      - name: dt-backend-secrets
+        secret:
+          secretName: dt-backend-secrets  
+      - name: tmp
+        emptyDir: {}
+      - name: data
+        {{- if .Values.apiserver.persistentVolume.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ if .Values.apiserver.persistentVolume.existingClaim }}{{ .Values.apiserver.persistentVolume.existingClaim }}{{- else }}dt-apiserver{{- end }}
+        {{- else }}
+        emptyDir:
+        {{- if .Values.apiserver.emptyDir.sizeLimit }}
+          sizeLimit: {{ .Values.apiserver.emptyDir.sizeLimit }}
+        {{- else }}
+          {}
+        {{- end -}}
+        {{- end }}

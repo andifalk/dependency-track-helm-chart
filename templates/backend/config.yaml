@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dt-backend-config
+  namespace: {{ .Values.global.nameSpace }}
+data:
+  ALPINE_DATABASE_MODE: embedded
+  ALPINE_DATABASE_URL: URL
+  ALPINE_DATABASE_DRIVER: org.postgresql.Driver
+  ALPINE_DATABASE_POOL_ENABLED: "true"
+  ALPINE_DATABASE_POOL_MAX_SIZE: "20"
+  ALPINE_DATABASE_POOL_MIN_IDLE: "10"
+  ALPINE_DATABASE_POOL_IDLE_TIMEOUT: "300000"
+  ALPINE_DATABASE_POOL_MAX_LIFETIME: "600000"
+  ALPINE_DATA_DIRECTORY: /data
+  ALPINE_METRICS_ENABLED: "true"
+

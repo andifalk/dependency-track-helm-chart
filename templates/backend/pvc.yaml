@@ -1,0 +1,23 @@
+{{- if .Values.apiserver.persistentVolume.enabled -}}
+{{- if not .Values.apiserver.persistentVolume.existingClaim -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  {{- with .Values.apiserver.persistentVolume.annotations }}
+  annotations: {{ toYaml .| nindent 4 }}
+  {{- end }}
+  labels: 
+    app: dt-apiserver
+    tier: backend
+  name: dt-apiserver
+  namespace: {{ .Values.global.nameSpace }}
+spec:
+  accessModes: {{ .Values.apiserver.persistentVolume.accessModes | toYaml | nindent 2 }}
+{{- with .Values.apiserver.persistentVolume.storageClass }}
+  storageClassName: "{{ . }}"
+{{- end }}
+  resources:
+    requests:
+      storage: "{{ .Values.apiserver.persistentVolume.size }}"
+{{- end -}}
+{{- end -}}
